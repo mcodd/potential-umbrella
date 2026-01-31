@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lisbon Self-Guided Travel Guide</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        #map {
+            height: 500px;
+            width: 100%;
+            border-bottom: 4px solid #1e3a5f;
+        }
+        
+        .map-legend {
+            background: white;
+            padding: 1rem;
+            margin: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 1rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .section h2 {
+            color: #1e3a5f;
+            border-bottom: 3px solid #e8b339;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+        
+        .section h3 {
+            color: #2d5a87;
+            margin-top: 1.2rem;
+            margin-bottom: 0.6rem;
+            font-size: 1.1rem;
+        }
+        
+        .place {
+            background: #f8f9fa;
+            border-left: 4px solid #e8b339;
+            padding: 0.8rem 1rem;
+            margin: 0.8rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .place-name {
+            font-weight: bold;
+            color: #1e3a5f;
+        }
+        
+        .place-detail {
+            font-size: 0.9rem;
+            color: #555;
+            margin-top: 0.3rem;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin: 0.8rem 0;
+            border-left: 4px solid #e8b339;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin: 0.8rem 0;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .tip {
+            background: #d4edda;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin: 0.8rem 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        ul {
+            margin-left: 1.2rem;
+            margin-top: 0.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.4rem;
+        }
+        
+        .day-header {
+            background: #1e3a5f;
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: bold;
+        }
+        
+        .restaurant-category {
+            background: #e8f4f8;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+            color: #1e3a5f;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            background: #1e3a5f;
+            color: white;
+            margin-top: 2rem;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            #map {
+                height: 400px;
+            }
+            
+            .legend-item {
+                display: block;
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        .leaflet-popup-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .popup-title {
+            font-weight: bold;
+            color: #1e3a5f;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        a.popup-title:hover {
+            color: #2d5a87;
+            text-decoration: underline;
+        }
+        
+        .popup-category {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .popup-detail {
+            font-size: 0.85rem;
+            margin-top: 6px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇵🇹 Lisbon Self-Guided Travel Guide</h1>
+        <p>The One Palácio da Anunciada & Surroundings</p>
+    </div>
+    
+    <div id="map"></div>
+    <div id="map-error" style="display: none; background: #f8d7da; color: #721c24; padding: 1rem; margin: 1rem; border-radius: 8px; border: 1px solid #f5c6cb;">
+        <strong>Map failed to load:</strong> <span id="error-detail">Unknown error</span>
+        <br><small style="margin-top: 0.5rem; display: block;">This usually happens when opening the file directly on mobile. Try hosting the file online (e.g., Google Drive shared as a web page).</small>
+    </div>
+    
+    <div class="map-legend">
+        <strong>Map Legend:</strong><br>
+        <span class="legend-item"><span class="legend-dot" style="background: #e74c3c;"></span> Your Hotel</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #3498db;"></span> Viewpoints</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #9b59b6;"></span> Museums & Culture</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #e67e22;"></span> Restaurants</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #27ae60;"></span> Markets & Shopping</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #1abc9c;"></span> Key Landmarks</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #f39c12;"></span> Cafés & Bars</span>
+        <span class="legend-item"><span class="legend-dot" style="background: #e91e63;"></span> Yarn & Knitting</span>
+    </div>
+    
+    <div class="container">
+        
+        <div class="section">
+            <h2>📍 Your Location</h2>
+            <p>You're staying at <strong>The One Palácio da Anunciada</strong>, a 16th-century palace converted into a luxury hotel. It's on Rua das Portas de Santo Antão, steps from Praça dos Restauradores and Avenida da Liberdade—the heart of Lisbon.</p>
+            
+            <div class="highlight">
+                <strong>Neighborhoods within walking distance:</strong>
+                <ul>
+                    <li><strong>Baixa</strong> (downtown grid) – immediate</li>
+                    <li><strong>Rossio/Restauradores</strong> – steps away</li>
+                    <li><strong>Chiado</strong> – 10-15 min walk</li>
+                    <li><strong>Alfama</strong> – 15-20 min walk</li>
+                    <li><strong>Bairro Alto</strong> – 10 min walk (or Glória funicular)</li>
+                </ul>
+            </div>
+            
+            <div class="tip">
+                <strong>Language Advantage:</strong> Your wife's Portuguese will open doors! Locals genuinely appreciate it and you'll get recommendations tourists typically miss.
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🗓️ Day 1: Baixa & Chiado Circuit</h2>
+            
+            <div class="place">
+                <div class="place-name">Rua das Portas de Santo Antão</div>
+                <div class="place-detail">Your street! Lisbon's liveliest seafood dining strip at night. Start here.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">A Ginjinha</div>
+                <div class="place-detail">Tiny bar near Rossio. Essential ritual: a shot of ginjinha (sour cherry liqueur). €1.50.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Igreja de São Domingos</div>
+                <div class="place-detail">Haunting fire-damaged church with scorched walls. Eerie, powerful atmosphere. Free entry.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Rossio Square (Praça Dom Pedro IV)</div>
+                <div class="place-detail">The heart of Lisbon. Note the neo-Manueline architecture of Rossio train station.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Praça da Figueira</div>
+                <div class="place-detail">Adjacent square. Try pastéis de nata at Mercado da Figueira bakery.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Elevador de Santa Justa</div>
+                <div class="place-detail">Neo-Gothic iron lift (Eiffel-style). Can have 45-min waits; admire from below or walk up instead.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Rua Augusta → Praça do Comércio</div>
+                <div class="place-detail">Main pedestrian street through triumphal arch to grand waterfront square. Great for sunset.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Chiado Neighborhood</div>
+                <div class="place-detail">Walk up Rua do Carmo/Rua Garrett. Boutiques, old cafés, Bertrand bookstore (world's oldest, since 1732).</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Miradouro de São Pedro de Alcântara ⭐</div>
+                <div class="place-detail">Take Glória funicular from Restauradores (or walk). Two-level terrace with gardens overlooking castle and downtown. Kiosk for drinks. Best at sunset.</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🗓️ Day 2: Alfama Wandering</h2>
+            <p>Ideal flâneur territory—intentionally get lost in narrow, winding streets.</p>
+            
+            <div class="place">
+                <div class="place-name">Sé de Lisboa (Cathedral)</div>
+                <div class="place-detail">Lisbon's oldest church, nearly 900 years old. Brief look inside, then head uphill.</div>
+            </div>
+            
+            <div class="tip">
+                <strong>Alfama Strategy:</strong> Put your phone away and wander. The pleasure is aimless exploration—let your senses guide you through the maze of alleyways.
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Miradouro das Portas do Sol ⭐</div>
+                <div class="place-detail">"Gateway to the Sun." Most photographed spot in Lisbon—terracotta rooftops tumbling toward the Tagus. Cafés with cherry liqueur.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Miradouro de Santa Luzia</div>
+                <div class="place-detail">Steps away, more peaceful. Beautiful blue azulejo tiles depicting the city's history. Shaded pergola.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Miradouro da Graça</div>
+                <div class="place-detail">Higher up, direct views at São Jorge Castle. New Funicular da Graça makes access easier.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Miradouro da Senhora do Monte</div>
+                <div class="place-detail">Lisbon's highest viewpoint. Worth it for sunset if you have energy.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">São Jorge Castle</div>
+                <div class="place-detail">€15 entry for rampart views. Or just wander the neighborhood around its walls for free.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">As Bifanas do Afonso</div>
+                <div class="place-detail">Near Elevador Castelo. Reportedly the best bifana (marinated pork sandwich) in Lisbon.</div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Fado Music:</strong> Alfama is the traditional home of fado. Your wife can help find authentic spots vs. tourist traps. Many taverns have informal evening performances.
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🗓️ Day 3: Markets, Riverfront & Beyond</h2>
+            
+            <div class="place">
+                <div class="place-name">Time Out Market (Mercado da Ribeira)</div>
+                <div class="place-detail">~15 min walk south to Cais do Sodré. 26+ restaurants from top chefs. Good for lunch sampling. Go early or late to avoid crowds.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Pink Street (Rua Nova do Carvalho)</div>
+                <div class="place-detail">Near Cais do Sodré. Famous pink-painted road, nightlife hub.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Ribeira das Naus</div>
+                <div class="place-detail">Waterfront promenade along the Tagus. Relaxed walking.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">LX Factory</div>
+                <div class="place-detail">~2 miles from hotel. Converted industrial complex with design shops, restaurants, incredible Ler Devagar bookstore. Best on Sundays (flea market). Take Tram 15E or train from Cais do Sodré (4 min to Alcântara-Mar).</div>
+            </div>
+            
+            <h3>Half-Day to Belém (Beyond 2 Miles)</h3>
+            <p>About 4 miles away, 25-30 min by Tram 15E from Praça da Figueira.</p>
+            
+            <div class="place">
+                <div class="place-name">Pastéis de Belém ⭐</div>
+                <div class="place-detail">The original custard tarts, since 1837. Skip the takeout line—walk into the large café inside. Hot, fresh, dusted with cinnamon.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Jerónimos Monastery</div>
+                <div class="place-detail">Stunning Manueline architecture, UNESCO World Heritage site.</div>
+            </div>
+            
+            <div class="warning">
+                <strong>Verify Before Going:</strong> Belém Tower is reportedly closed for construction. Check current status.
+            </div>
+            
+            <div class="tip">
+                <strong>Transport Tip:</strong> The train from Cais do Sodré to Belém (7 min, 3 stops) is faster and less crowded than Tram 15E. The tram is more scenic but pickpocket-prone when packed.
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🏛️ Indoor Options for Rainy Days</h2>
+            
+            <h3>Walking Distance (Under 1 Mile)</h3>
+            
+            <div class="place">
+                <div class="place-name">Carmo Convent & Archaeological Museum ⭐</div>
+                <div class="place-detail">10-min walk. Hauntingly beautiful Gothic ruins—roof collapsed during 1755 earthquake and was never rebuilt. Arches frame the sky. Museum has Peruvian mummies, Egyptian sarcophagus, Gothic tombs. Also where dictatorship surrendered in 1974 Carnation Revolution. €5, open 10am-6pm, closed Sundays.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">MUDE - Design & Fashion Museum</div>
+                <div class="place-detail">In Baixa near Praça do Comércio. 20th-century design/fashion. €11 (free Fri after 5pm, Sun 10am-2pm).</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Igreja de São Roque</div>
+                <div class="place-detail">Near São Pedro viewpoint. Plain outside, stunning inside—one of world's most expensive chapels (built in Rome, shipped to Lisbon). Free.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Casa do Alentejo</div>
+                <div class="place-detail">Practically next to your hotel! Moorish-style palace with beautiful tiles. Has a restaurant. Worth entering just for the architecture.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">A Brasileira Café</div>
+                <div class="place-detail">Historic Chiado café since 1905. Haunt of poet Fernando Pessoa (bronze statue outside). Perfect for coffee and pastries.</div>
+            </div>
+            
+            <h3>Worth the Trip</h3>
+            
+            <div class="place">
+                <div class="place-name">National Tile Museum (Museu do Azulejo)</div>
+                <div class="place-detail">Only museum in the world dedicated to azulejo tiles. Magnificent 16th-century convent. Highlight: 23-meter panorama of Lisbon before 1755 earthquake. Beautiful café. ~20 min by Bus 759 from Restauradores, or €8-10 Uber. €8 entry.</div>
+            </div>
+            
+            <div class="warning">
+                <strong>Check Status:</strong> May be closed for renovations. Verify at museudoazulejo.gov.pt
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Gulbenkian Museum & Gardens</div>
+                <div class="place-detail">Main collection closed until July 2026, but Modern Art Center (CAM) is open + "Great Works" exhibition. The 7.5-hectare gardens are free. ~7 min metro from Baixa-Chiado (blue line to São Sebastião).</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Fado Museum</div>
+                <div class="place-detail">In Alfama near waterfront. Great intro to Portugal's soulful music before hearing it live. 1-2 hours.</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🍽️ Restaurant Recommendations</h2>
+            
+            <div class="highlight">
+                <strong>Dining Timing Note:</strong> Portuguese dinner typically starts 8pm or later. At 6:30pm you'll be early—but restaurants will accommodate. Arrive right when they open, or target tascas (taverns) which are more flexible. Time Out Market operates food-hall hours if you want truly early eating.
+            </div>
+            
+            <div class="restaurant-category">Near Your Hotel (Baixa/Rossio)</div>
+            
+            <div class="place">
+                <div class="place-name">Tendinha</div>
+                <div class="place-detail">Since 1840, right on Rossio Square. Best pastel de bacalhau (codfish croquette) in the city. Traditional, affordable.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Casa do Alentejo</div>
+                <div class="place-detail">Stunning Moorish palace. Hearty Alentejo cuisine (pork, bread dishes). Very affordable, locals' favorite.</div>
+            </div>
+            
+            <div class="restaurant-category">Chiado Area (10-15 min walk)</div>
+            
+            <div class="place">
+                <div class="place-name">Taberna da Rua das Flores ⭐</div>
+                <div class="place-detail">Modern tavern with daily-changing blackboard menu. Chef-quality petiscos. Cash only, no reservations—arrive before 7pm. Order scallops if available.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">O Velho Eurico</div>
+                <div class="place-detail">Near São Jorge Castle. Traditional dishes with modern attitude. Lamb croquettes, arroz de pato. Book ahead or arrive at opening.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Sea Me - Peixaria Moderna</div>
+                <div class="place-detail">Portuguese-Japanese seafood fusion. Fresh fish display, modern space. Good for nicer dinner.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Sacramento do Chiado</div>
+                <div class="place-detail">Traditional Portuguese with a twist. Try prawns with garlic. Beautifully restored space.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">O Trevo (Largo Camões)</div>
+                <div class="place-detail">The bifana that won over Anthony Bourdain. Simple café, quick delicious pork sandwich + beer.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Cantinho do Avillez</div>
+                <div class="place-detail">By Michelin-starred chef José Avillez. More accessible than his fine dining spots. Portuguese with international influences.</div>
+            </div>
+            
+            <div class="restaurant-category">Alfama Area</div>
+            
+            <div class="place">
+                <div class="place-name">Miss Can</div>
+                <div class="place-detail">Tiny petiscaria specializing in tinned fish (conservas). Portuguese tradition of high-quality preserved seafood. Very small, charming.</div>
+            </div>
+            
+            <div class="restaurant-category">Special Dinner</div>
+            
+            <div class="place">
+                <div class="place-name">Ponto Final</div>
+                <div class="place-detail">Across the river in Almada. Waterfront views of 25 de Abril Bridge. Worth the ferry for arroz de tamboril (monkfish rice). Reserve ahead.</div>
+            </div>
+            
+            <div class="place">
+                <div class="place-name">Belcanto / Alma</div>
+                <div class="place-detail">Michelin-starred fine dining. Book far in advance.</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>🚇 Practical Information</h2>
+            
+            <h3>Transport</h3>
+            <ul>
+                <li><strong>24-hour transit pass:</strong> €7 from metro stations. Worth it if using transit 3+ times/day.</li>
+                <li><strong>Navegante card:</strong> €0.50 card + "zapping" credit. Single tram fare €1.66 with zapping (€3 cash on board).</li>
+                <li><strong>Funiculars near you:</strong> Glória (Restauradores to Bairro Alto)—may be out of service, verify locally. Lavra nearby is less touristy.</li>
+                <li><strong>Tram 28:</strong> Famous but extremely crowded and pickpocket-prone. Walking is more pleasant.</li>
+                <li><strong>Uber/Bolt:</strong> Work well in Lisbon, often €8-12 for cross-city trips.</li>
+            </ul>
+            
+            <h3>Weather (February)</h3>
+            <ul>
+                <li>Temperatures: 50-60°F (10-15°C)</li>
+                <li>Often mild but can be rainy</li>
+                <li>Bring layers + light rain jacket</li>
+            </ul>
+            
+            <h3>Eating Rhythm</h3>
+            <ul>
+                <li>Lunch: typically 12:30-2:30pm</li>
+                <li>Dinner: typically 8-10pm or later</li>
+                <li>Many places close between meals</li>
+                <li>Tascas more flexible on timing</li>
+            </ul>
+            
+            <div class="warning">
+                <strong>Verify Before You Go:</strong>
+                <ul>
+                    <li><strong>National Tile Museum</strong> – May be closed for construction</li>
+                    <li><strong>Gulbenkian main collection</strong> – Closed until July 2026</li>
+                    <li><strong>Belém Tower</strong> – Reports of construction closure</li>
+                    <li><strong>Elevador da Glória</strong> – May be out of service</li>
+                </ul>
+            </div>
+        </div>
+        
+    </div>
+    
+    <div class="footer">
+        <p>Generated January 2026 | Have a wonderful trip! 🌞</p>
+        <p style="font-size: 0.85rem; opacity: 0.8;">Tap markers on the map for details about each location</p>
+    </div>
+    
+    <script>
+        // Error handling function
+        function showMapError(message) {
+            document.getElementById('map-error').style.display = 'block';
+            document.getElementById('error-detail').textContent = message;
+        }
+
+        // Check if Leaflet loaded
+        if (typeof L === 'undefined') {
+            showMapError('Leaflet library failed to load. External scripts may be blocked.');
+            throw new Error('Leaflet not loaded');
+        }
+
+        // Initialize the map centered on your hotel
+        const hotelCoords = [38.7161, -9.1413];
+        let map;
+        try {
+            map = L.map('map').setView(hotelCoords, 14);
+        } catch (e) {
+            showMapError('Map initialization failed: ' + e.message);
+            throw e;
+        }
+
+        // Add OpenStreetMap tiles with error handling
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        tileLayer.on('tileerror', function(error) {
+            showMapError('Map tiles failed to load. This may be a network or CORS issue.');
+        });
+        
+        // Custom icon function
+        function createIcon(color) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    background-color: ${color};
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 50%;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+                "></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+                popupAnchor: [0, -12]
+            });
+        }
+        
+        // Color coding
+        const colors = {
+            hotel: '#e74c3c',
+            viewpoint: '#3498db',
+            museum: '#9b59b6',
+            restaurant: '#e67e22',
+            market: '#27ae60',
+            landmark: '#1abc9c',
+            cafe: '#f39c12',
+            yarn: '#e91e63'
+        };
+        
+        // Locations data
+        const locations = [
+            // Hotel
+            { coords: [38.7161, -9.1413], name: "The One Palácio da Anunciada", category: "Your Hotel", detail: "16th-century palace. Rua das Portas de Santo Antão", type: 'hotel', website: "https://www.hotelstheone.com/en/lisbon-hotels/the-one-palacio-da-anunciada" },
+
+            // Viewpoints
+            { coords: [38.7148, -9.1464], name: "Miradouro de São Pedro de Alcântara", category: "Viewpoint", detail: "Two-level terrace with gardens. Best at sunset. Take Glória funicular or walk.", type: 'viewpoint', website: "https://www.visitlisboa.com/en/places/miradouro-de-s-pedro-de-alcantara" },
+            { coords: [38.7120, -9.1297], name: "Miradouro das Portas do Sol", category: "Viewpoint", detail: "Most photographed spot in Lisbon. Terracotta rooftops toward the Tagus.", type: 'viewpoint', website: "https://www.visitlisboa.com/en/places/miradouro-das-portas-do-sol" },
+            { coords: [38.7117, -9.1303], name: "Miradouro de Santa Luzia", category: "Viewpoint", detail: "Beautiful azulejo tiles. Shaded pergola. More peaceful than Portas do Sol.", type: 'viewpoint', website: "https://www.visitlisboa.com/en/places/miradouro-de-santa-luzia" },
+            { coords: [38.7167, -9.1297], name: "Miradouro da Graça", category: "Viewpoint", detail: "Direct views at São Jorge Castle. New funicular makes access easier.", type: 'viewpoint', website: "https://www.visitlisboa.com/en/places/miradouro-da-graca" },
+            { coords: [38.7189, -9.1319], name: "Miradouro da Senhora do Monte", category: "Viewpoint", detail: "Lisbon's highest viewpoint. Worth it for sunset.", type: 'viewpoint', website: "https://www.visitlisboa.com/en/places/miradouro-da-senhora-do-monte" },
+
+            // Museums & Culture
+            { coords: [38.7122, -9.1403], name: "Carmo Convent & Museum", category: "Museum", detail: "Gothic ruins from 1755 earthquake. €5. Closed Sundays.", type: 'museum', website: "https://museuarqueologicodocarmo.pt/mac_en.html" },
+            { coords: [38.7082, -9.1365], name: "MUDE Design Museum", category: "Museum", detail: "20th-century design/fashion. €11. Free Fri after 5pm.", type: 'museum', website: "https://mude.pt/" },
+            { coords: [38.7145, -9.1448], name: "Igreja de São Roque", category: "Museum", detail: "Plain outside, stunning inside. Most expensive chapel. Free.", type: 'museum', website: "https://www.visitlisboa.com/en/places/igreja-de-sao-roque" },
+            { coords: [38.7101, -9.1332], name: "Sé de Lisboa (Cathedral)", category: "Landmark", detail: "Lisbon's oldest church, nearly 900 years old.", type: 'museum', website: "https://www.visitlisboa.com/en/places/se-catedral" },
+            { coords: [38.7247, -9.1117], name: "National Tile Museum", category: "Museum", detail: "World's only azulejo museum. Check if open. Bus 759 or Uber.", type: 'museum', website: "https://www.museunacionaldoazulejo.pt/en" },
+            { coords: [38.7367, -9.1530], name: "Gulbenkian Museum", category: "Museum", detail: "Main collection closed until July 2026. CAM open. Gardens free.", type: 'museum', website: "https://gulbenkian.pt/museu/en/" },
+            { coords: [38.7108, -9.1260], name: "Fado Museum", category: "Museum", detail: "Intro to Portugal's soulful music tradition. 1-2 hours.", type: 'museum', website: "https://www.museudofado.pt/en" },
+
+            // Landmarks
+            { coords: [38.7138, -9.1397], name: "Rossio Square", category: "Landmark", detail: "Heart of Lisbon. Note neo-Manueline Rossio train station.", type: 'landmark', website: "https://www.visitlisboa.com/en/places/praca-dom-pedro-iv-rossio" },
+            { coords: [38.7073, -9.1365], name: "Praça do Comércio", category: "Landmark", detail: "Grand waterfront square. Great for sunset drinks.", type: 'landmark', website: "https://www.visitlisboa.com/en/places/praca-do-comercio" },
+            { coords: [38.7119, -9.1388], name: "Elevador de Santa Justa", category: "Landmark", detail: "Neo-Gothic iron lift. Often 45-min waits.", type: 'landmark', website: "https://www.visitlisboa.com/en/places/elevador-de-santa-justa" },
+            { coords: [38.7140, -9.1348], name: "São Jorge Castle", category: "Landmark", detail: "€15 entry for ramparts. Views are excellent.", type: 'landmark', website: "https://castelodesaojorge.pt/en/" },
+            { coords: [38.7173, -9.1393], name: "Igreja de São Domingos", category: "Landmark", detail: "Fire-damaged church. Haunting atmosphere. Free.", type: 'landmark', website: "https://www.visitlisboa.com/en/places/igreja-de-sao-domingos" },
+
+            // Markets & Shopping
+            { coords: [38.7066, -9.1450], name: "Time Out Market", category: "Market", detail: "26+ restaurants from top chefs. ~15 min walk south to Cais do Sodré.", type: 'market', website: "https://www.timeout.com/time-out-market-lisboa" },
+            { coords: [38.7035, -9.1695], name: "LX Factory", category: "Market", detail: "Design shops, restaurants, Ler Devagar bookstore. Best on Sundays.", type: 'market', website: "https://lxfactory.com/en/homepage-en/" },
+            { coords: [38.7127, -9.1431], name: "Bertrand Bookstore", category: "Market", detail: "World's oldest operating bookstore, since 1732.", type: 'market', website: "https://www.bertrand.pt/online/chiado-worlds-oldest-bookstore" },
+            { coords: [38.7210, -9.1455], name: "Avenida da Liberdade", category: "Luxury Shopping", detail: "Lisbon's premier luxury boulevard. Louis Vuitton, Gucci, Prada, Dior, Chanel, Cartier, Burberry. 1km tree-lined avenue.", type: 'market', website: "https://www.visitlisboa.com/en/places/avenida-da-liberdade" },
+            { coords: [38.7168, -9.1500], name: "Príncipe Real", category: "Luxury Shopping", detail: "Upscale boutique district. Independent Portuguese designers, concept stores, high-end antiques. Beautiful garden.", type: 'market', website: "https://www.visitlisboa.com/en/places/jardim-do-principe-real" },
+
+            // Cafés & Bars
+            { coords: [38.7145, -9.1391], name: "A Ginjinha", category: "Café/Bar", detail: "Tiny bar near Rossio. Shot of sour cherry liqueur. Essential ritual.", type: 'cafe' },
+            { coords: [38.7107, -9.1423], name: "A Brasileira", category: "Café/Bar", detail: "Historic café since 1905. Pessoa statue outside. Coffee + pastries.", type: 'cafe', website: "https://www.visitlisboa.com/en/places/a-brasileira" },
+            { coords: [38.7159, -9.1392], name: "Casa do Alentejo", category: "Café/Bar", detail: "Moorish palace. Restaurant + bar. Great architecture.", type: 'cafe', website: "https://www.casadoalentejo.pt/" },
+
+            // Restaurants
+            { coords: [38.7139, -9.1393], name: "Tendinha", category: "Restaurant", detail: "Since 1840. Best pastel de bacalhau in Lisbon. Rossio Square.", type: 'restaurant' },
+            { coords: [38.7117, -9.1434], name: "Taberna da Rua das Flores", category: "Restaurant", detail: "Modern tavern. Daily blackboard menu. Cash only, no reservations.", type: 'restaurant', website: "https://www.facebook.com/pages/A-Taberna-da-Rua-das-Flores/292950570719522" },
+            { coords: [38.7136, -9.1342], name: "O Velho Eurico", category: "Restaurant", detail: "Near castle. Lamb croquettes, arroz de pato. Book ahead.", type: 'restaurant' },
+            { coords: [38.7108, -9.1403], name: "Sea Me", category: "Restaurant", detail: "Portuguese-Japanese seafood fusion. Fresh fish display.", type: 'restaurant', website: "https://peixariamoderna.com/en/" },
+            { coords: [38.7123, -9.1430], name: "Sacramento do Chiado", category: "Restaurant", detail: "Traditional Portuguese with a twist. Prawns with garlic.", type: 'restaurant', website: "https://www.sacramentodochiado.com/" },
+            { coords: [38.7111, -9.1443], name: "O Trevo", category: "Restaurant", detail: "Anthony Bourdain's favorite bifana. Largo Camões.", type: 'restaurant' },
+            { coords: [38.7100, -9.1405], name: "Cantinho do Avillez", category: "Restaurant", detail: "By Michelin-starred José Avillez. Accessible pricing.", type: 'restaurant', website: "https://cantinhodoavillez.pt/en/" },
+            { coords: [38.7103, -9.1278], name: "Miss Can", category: "Restaurant", detail: "Tiny petiscaria. High-quality tinned fish (conservas).", type: 'restaurant', website: "https://www.misscan.pt/" },
+
+            // Belém (further out)
+            { coords: [38.6975, -9.2033], name: "Pastéis de Belém", category: "Must Try", detail: "Original custard tarts since 1837. Walk into café, skip takeout line.", type: 'cafe', website: "https://pasteisdebelem.pt/en/" },
+            { coords: [38.6979, -9.2067], name: "Jerónimos Monastery", category: "Landmark", detail: "UNESCO World Heritage. Stunning Manueline architecture.", type: 'landmark', website: "https://www.museusemonumentos.pt/en/museus-e-monumentos/mosteiro-dos-jeronimos-e-capela-de-sao-jeronimo" },
+
+            // Yarn & Knitting Shops
+            { coords: [38.7105, -9.1368], name: "Retrosaria Bijou", category: "Yarn & Knitting", detail: "Historic 1915 haberdashery. Art Nouveau facade. Wool, threads, lace, embroidery. Mon-Fri 9:30-7, Sat 9:30-1.", type: 'yarn', website: "https://lojascomhistoria.pt/shops/retrosaria-bijou" },
+            { coords: [38.7130, -9.1350], name: "Casa Justo", category: "Yarn & Knitting", detail: "Large yarn selection. Owner fetches choices from basement. Traditional shop.", type: 'yarn', website: "https://www.yelp.com/biz/casa-justo-lisboa-2" },
+            { coords: [38.7350, -9.1280], name: "Retrosaria Rosa Pomar", category: "Yarn & Knitting", detail: "THE Lisbon yarn shop. Heritage Portuguese wool from native sheep breeds. Tue-Sat 10-7.", type: 'yarn', website: "https://retrosaria.rosapomar.com/" },
+        ];
+        
+        // Add markers
+        locations.forEach(loc => {
+            const icon = createIcon(colors[loc.type] || colors.landmark);
+            const marker = L.marker(loc.coords, { icon: icon }).addTo(map);
+
+            const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${hotelCoords[0]},${hotelCoords[1]}&destination=${loc.coords[0]},${loc.coords[1]}&travelmode=walking`;
+
+            const titleHtml = loc.website
+                ? `<a href="${loc.website}" target="_blank" class="popup-title" style="color: #1e3a5f; text-decoration: none;">${loc.name}</a>`
+                : `<div class="popup-title">${loc.name}</div>`;
+
+            const popupContent = `
+                ${titleHtml}
+                <div class="popup-category">${loc.category}</div>
+                <div class="popup-detail">${loc.detail}</div>
+                <a href="${directionsUrl}" target="_blank" style="display: inline-block; margin-top: 8px; color: #1e3a5f; font-size: 0.85rem; text-decoration: none; font-weight: 600;">📍 Get directions from hotel →</a>
+            `;
+
+            marker.bindPopup(popupContent);
+        });
+        
+        // Add a special larger marker for the hotel
+        const hotelIcon = L.divIcon({
+            className: 'custom-marker',
+            html: `<div style="
+                background-color: ${colors.hotel};
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                border: 4px solid white;
+                box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+            ">🏨</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
+        });
+        
+        // Remove the default hotel marker and add the special one
+        const hotelMarker = L.marker(hotelCoords, { icon: hotelIcon }).addTo(map);
+        hotelMarker.bindPopup(`
+            <a href="https://www.hotelstheone.com/en/lisbon-hotels/the-one-palacio-da-anunciada" target="_blank" class="popup-title" style="color: #1e3a5f; text-decoration: none;">The One Palácio da Anunciada</a>
+            <div class="popup-category">Your Hotel</div>
+            <div class="popup-detail">16th-century palace on Rua das Portas de Santo Antão. Steps from Restauradores.</div>
+        `).openPopup();
+        
+        // Add 2-mile radius circle
+        L.circle(hotelCoords, {
+            color: '#1e3a5f',
+            fillColor: '#1e3a5f',
+            fillOpacity: 0.05,
+            radius: 3219, // 2 miles in meters
+            weight: 2,
+            dashArray: '10, 10'
+        }).addTo(map);
+    </script>
+</body>
+</html>
